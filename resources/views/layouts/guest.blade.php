@@ -32,7 +32,7 @@
     <body class="bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
         
         <!-- Botón de cambio de tema flotante (Esquina superior derecha) -->
-        <div class="fixed top-5 right-5 z-50" 
+        {{-- <div class="fixed top-5 right-5 z-50" 
              x-data="{
                 darkMode: localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches),
                 toggleTheme() {
@@ -60,7 +60,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
                 </svg>
             </button>
-        </div>
+        </div> --}}
 
         <div class="font-sans text-gray-900 dark:text-slate-100 antialiased">
             {{ $slot }}

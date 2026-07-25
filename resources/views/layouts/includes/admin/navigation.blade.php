@@ -73,7 +73,7 @@
                     </x-dropdown>
                 </div>
 
-                {{-- 2. BOTÓN DE CAMBIO DE TEMA (SOL / LUNA) --}}
+                {{-- 2. BOTÓN DE CAMBIO DE TEMA (MODO SWITCH INTERACTIVO) --}}
                 <div x-data="{
                     darkMode: localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches),
                     toggleTheme() {
@@ -87,24 +87,36 @@
                         }
                     }
                 }">
-                    <button @click="toggleTheme()" type="button"
-                        class="inline-flex items-center p-2 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white bg-gray-100 hover:bg-gray-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 focus:outline-none transition">
+                    <button @click="toggleTheme()" type="button" aria-label="Toggle Theme"
+                        class="relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-200 dark:bg-neutral-700 transition-colors duration-300 ease-in-out focus:outline-none">
 
-                        <!-- Icono Sol: Se muestra en MODO CLARO (indica que el tema actual es claro o que activa la luz) -->
-                        <svg x-show="!darkMode" class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
-                            </path>
-                        </svg>
+                        <!-- Círculo Deslizante -->
+                        <span
+                            class="pointer-events-none relative inline-block h-7 w-7 transform rounded-full bg-white dark:bg-neutral-900 shadow-md ring-0 transition duration-300 ease-in-out"
+                            :class="darkMode ? 'translate-x-6' : 'translate-x-0'">
 
-                        <!-- Icono Luna: Se muestra en MODO OSCURO (indica que el tema actual es oscuro) -->
-                        <svg x-show="darkMode" class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
-                            </path>
-                        </svg>
+                            <!-- Icono Sol (Modo Claro) -->
+                            <span
+                                class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity duration-200"
+                                :class="darkMode ? 'opacity-0 ease-out duration-100' : 'opacity-100 ease-in duration-200'">
+                                <svg class="h-4 w-4 text-amber-500" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                            </span>
+
+                            <!-- Icono Luna (Modo Oscuro) -->
+                            <span
+                                class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity duration-200"
+                                :class="darkMode ? 'opacity-100 ease-in duration-200' : 'opacity-0 ease-out duration-100'">
+                                <svg class="h-3.5 w-3.5 text-indigo-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                </svg>
+                            </span>
+                        </span>
                     </button>
                 </div>
 
