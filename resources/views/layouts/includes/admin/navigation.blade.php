@@ -15,8 +15,7 @@
                 <a href="{{ route('admin.dashboard') }}" class="flex ms-2 md:me-24 items-center">
                     <img src="{{ asset('img/logo.png') }}" class="h-8 me-3 object-contain" alt="Logo Inventory" />
 
-                    <span
-                        class="self-center text-lg font-black whitespace-nowrap dark:text-white tracking-tight text-gray-800">
+                    <span class="self-center text-lg font-black whitespace-nowrap dark:text-white tracking-tight text-gray-800">
                         Inventory
                     </span>
                 </a>

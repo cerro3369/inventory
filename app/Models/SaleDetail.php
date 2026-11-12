@@ -10,17 +10,34 @@ class SaleDetail extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['sale_id', 'edition_id', 'cantidad', 'precio_unitario'];
+    protected $fillable = [
+        'sale_id', 
+        'edition_id', 
+        'cantidad', 
+        'precio_unitario',
+    ];
 
-    // Pertenece a una venta
+    /**
+     * Un detalle de venta pertenece a una venta cabecera.
+     */
     public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class);
     }
 
-    // Está asociado a una edición
+    /**
+     * Un detalle de venta está asociado a una edición específica.
+     */
     public function edition(): BelongsTo
     {
         return $this->belongsTo(Edition::class);
+    }
+
+    /**
+     * Atributo calculado para obtener el subtotal del renglón.
+     */
+    public function getSubtotalAttribute(): float
+    {
+        return (float) ($this->cantidad * $this->precio_unitario);
     }
 }

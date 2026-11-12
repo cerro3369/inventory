@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('wastes', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('edition_id')->constrained()->cascadeOnDelete();
             $table->integer('cantidad');
             $table->string('tipo_baja', 45);
             $table->text('notas')->nullable();
-
-            $table->foreignId('edition_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }

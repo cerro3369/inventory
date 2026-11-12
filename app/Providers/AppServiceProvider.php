@@ -23,10 +23,5 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Schema::defaultStringLength(191);
-
-        // 💡 Cada vez que se cargue una vista, verificamos si hay un idioma en sesión
-        if (Session::has('locale')) {
-            App::setLocale(Session::get('locale'));
-        }
     }
 }

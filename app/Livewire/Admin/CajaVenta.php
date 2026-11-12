@@ -2,12 +2,12 @@
 
 namespace App\Livewire\Admin;
 
-use Livewire\Component;
-use Livewire\WithPagination;
 use App\Models\Edition;
 use App\Models\Sale;
 use App\Models\SaleDetail;
 use Illuminate\Support\Facades\DB;
+use Livewire\Component;
+use Livewire\WithPagination;
 
 class CajaVenta extends Component
 {
@@ -27,15 +27,21 @@ class CajaVenta extends Component
         $this->resetPage();
     }
 
+    /**
+     * Obtiene el catálogo de ediciones filtrado estrictamente por el usuario autenticado (Multi-Tenancy)
+     */
     public function getCatalogProperty()
     {
         return Edition::with('product')
+            ->whereHas('product') // Aplica el Global Scope del Trait BelongsToUser en Product
             ->where('stock_actual', '>', 0)
-            ->where(function ($query) {
-                $query->where('numero_edicion', 'like', '%' . $this->search . '%')
-                    ->orWhereHas('product', function ($q) {
-                        $q->where('titulo', 'like', '%' . $this->search . '%');
-                    });
+            ->when($this->search, function ($query) {
+                $query->where(function ($q) {
+                    $q->where('numero_edicion', 'like', '%' . $this->search . '%')
+                        ->orWhereHas('product', function ($pQuery) {
+                            $pQuery->where('titulo', 'like', '%' . $this->search . '%');
+                        });
+                });
             })
             ->orderBy('id', 'desc')
             ->paginate(10);
@@ -45,16 +51,16 @@ class CajaVenta extends Component
     {
         $edition = Edition::with('product')->find($editionId);
 
-        if (!$edition) return;
+        if (!$edition || $edition->stock_actual <= 0) return;
 
         if (isset($this->cart[$editionId])) {
             if ($this->cart[$editionId]['cantidad'] < $edition->stock_actual) {
                 $this->cart[$editionId]['cantidad']++;
             } else {
                 $this->dispatch('notify', [
-                    'icon' => 'warning',
+                    'icon'  => 'warning',
                     'title' => 'Stock límite',
-                    'text' => 'No hay más unidades en almacén.'
+                    'text'  => 'No hay más unidades en almacén.'
                 ]);
             }
         } else {
@@ -84,9 +90,9 @@ class CajaVenta extends Component
             } else {
                 $this->cart[$editionId]['cantidad'] = $this->cart[$editionId]['stock'];
                 $this->dispatch('notify', [
-                    'icon' => 'warning',
+                    'icon'  => 'warning',
                     'title' => 'Stock superado',
-                    'text' => 'Se ha ajustado a la cantidad máxima disponible.'
+                    'text'  => 'Se ha ajustado a la cantidad máxima disponible.'
                 ]);
             }
         }
@@ -108,27 +114,35 @@ class CajaVenta extends Component
     public function processSale()
     {
         if (empty($this->cart)) {
-            $this->dispatch('notify', ['icon' => 'error', 'title' => 'Venta vacía', 'text' => 'Agrega al menos una edición.']);
+            $this->dispatch('notify', [
+                'icon'  => 'error', 
+                'title' => 'Venta vacía', 
+                'text'  => 'Agrega al menos una edición.'
+            ]);
             return;
         }
 
         DB::beginTransaction();
 
         try {
-            $sale = Sale::create(['total' => $this->total]);
+            // El Trait BelongsToUser asigna automáticamente el user_id de la sesión
+            $sale = Sale::create([
+                'total' => $this->total
+            ]);
 
             foreach ($this->cart as $item) {
                 $edition = Edition::find($item['edition_id']);
 
-                if ($edition->stock_actual < $item['cantidad']) {
-                    throw new \Exception("La edición '{$edition->numero_edicion}' se quedó sin stock.");
+                if (!$edition || $edition->stock_actual < $item['cantidad']) {
+                    throw new \Exception("La edición '" . ($item['numero'] ?? '') . "' no cuenta con stock suficiente.");
                 }
 
                 SaleDetail::create([
                     'sale_id'         => $sale->id,
                     'edition_id'      => $edition->id,
                     'cantidad'        => $item['cantidad'],
-                    'precio_unitario' => $item['precio']
+                    'precio_unitario' => $item['precio'],
+                    'subtotal'        => $item['precio'] * $item['cantidad']
                 ]);
 
                 $edition->decrement('stock_actual', $item['cantidad']);
@@ -146,7 +160,11 @@ class CajaVenta extends Component
 
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatch('notify', ['icon' => 'error', 'title' => 'Error de venta', 'text' => $e->getMessage()]);
+            $this->dispatch('notify', [
+                'icon'  => 'error', 
+                'title' => 'Error de venta', 
+                'text'  => $e->getMessage()
+            ]);
         }
     }
 

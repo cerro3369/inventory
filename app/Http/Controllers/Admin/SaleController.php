@@ -3,126 +3,146 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Edition;
 use App\Models\Sale;
 use App\Models\SaleDetail;
-use App\Models\Edition;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class SaleController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Muestra el historial de ventas del comerciante autenticado.
      */
-    public function index()
+    public function index(): View
     {
-        // Historial de ventas
-        $sales = Sale::orderBy('created_at', 'desc')->get();
+        // El Trait BelongsToUser en Sale aplica el Global Scope por usuario automáticamente
+        $sales = Sale::with('details.edition.product')
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
         return view('admin.ventas.index', compact('sales'));
     }
 
-    public function create()
+    /**
+     * Muestra la pantalla de la caja registradora / POS.
+     */
+    public function create(): View
     {
-        // Mostramos la pantalla de la caja registradora
         return view('admin.ventas.create');
     }
 
-    public function store(Request $request)
+    /**
+     * Procesa y registra una nueva venta HTTP tradicional (fallback a Livewire CajaVenta).
+     */
+    public function store(Request $request): RedirectResponse
     {
-        // El request idealmente enviará un array de productos seleccionados: 
-        // [ ['edition_id' => 1, 'cantidad' => 2], ['edition_id' => 3, 'cantidad' => 1] ]
         $request->validate([
-            'items' => 'required|array|min:1',
+            'items'              => 'required|array|min:1',
             'items.*.edition_id' => 'required|exists:editions,id',
-            'items.*.cantidad' => 'required|integer|min:1',
+            'items.*.cantidad'   => 'required|integer|min:1',
         ]);
 
-        // Iniciamos una transacción de base de datos por seguridad
         DB::beginTransaction();
 
         try {
-            // 1. Crear la cabecera de la venta con total inicial de 0
-            $sale = Sale::create(['total' => 0]);
+            // 1. Crear cabecera de la venta (el Trait BelongsToUser asigna el user_id)
+            $sale = Sale::create([
+                'user_id' => Auth::id(),
+                'total'   => 0,
+            ]);
+
             $totalVenta = 0;
 
-            // 2. Procesar cada uno de los productos que se llevan
+            // 2. Procesar cada edición adquirida
             foreach ($request->items as $item) {
-                $edition = Edition::findOrFail($item['edition_id']);
+                // Verificar que la edición pertenezca a un producto del usuario en sesión
+                $edition = Edition::whereHas('product')->findOrFail($item['edition_id']);
 
-                // Validamos que haya stock suficiente antes de vender
                 if ($edition->stock_actual < $item['cantidad']) {
-                    throw new \Exception("Stock insuficiente para la edición: {$edition->numero_edicion}");
+                    throw new \Exception("Stock insuficiente para la edición: {$edition->numero_edicion}. Disponible: {$edition->stock_actual} pzas.");
                 }
 
-                // Calculamos el subtotal de este renglón
                 $subtotal = $edition->precio_venta * $item['cantidad'];
                 $totalVenta += $subtotal;
 
-                // 3. Crear el registro del detalle de la venta
+                // 3. Crear renglón del detalle de venta
                 SaleDetail::create([
-                    'sale_id' => $sale->id,
-                    'edition_id' => $edition->id,
-                    'cantidad' => $item['cantidad'],
-                    'precio_unitario' => $edition->precio_venta
+                    'sale_id'         => $sale->id,
+                    'edition_id'      => $edition->id,
+                    'cantidad'        => $item['cantidad'],
+                    'precio_unitario' => $edition->precio_venta,
                 ]);
 
-                // 4. RESTAR EL STOCK AUTOMÁTICAMENTE 📉
+                // 4. Descontar inventario
                 $edition->decrement('stock_actual', $item['cantidad']);
             }
 
-            // 5. Actualizar el total definitivo de la venta
+            // 5. Actualizar el total definitivo
             $sale->update(['total' => $totalVenta]);
 
-            // Confirmamos que todo salió bien y guardamos en la BD
             DB::commit();
 
             session()->flash('swal', [
-                'icon' => 'success',
+                'icon'  => 'success',
                 'title' => '¡Venta Realizada!',
-                'text' => "Venta registrada con éxito por un total de $$totalVenta",
+                'text'  => "Venta N° {$sale->id} registrada con éxito por $" . number_format($totalVenta, 2),
             ]);
 
             return redirect()->route('admin.ventas.index');
         } catch (\Exception $e) {
-            // Si algo falla, cancelamos todos los cambios hechos en esta transacción
             DB::rollBack();
 
-            return back()->withErrors(['error' => $e->getMessage()]);
+            return back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
     }
 
     /**
-     * Display the specified resource.
+     * Muestra el detalle e inspección de una venta realizada.
      */
-    public function show(Sale $sale)
+    public function show(Sale $sale): View
     {
-        // Cargamos la venta junto con sus renglones y el producto base de cada edición
+        // El Global Scope de BelongsToUser lanzará 404 si la venta pertenece a otro comerciante
         $sale->load('details.edition.product');
 
         return view('admin.ventas.show', compact('sale'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Cancela/Anula una venta devolviendo las unidades al inventario.
      */
-    public function edit(Sale $sale)
+    public function destroy(Sale $sale): RedirectResponse
     {
-        return view('admin.ventas.edit');
-    }
+        DB::beginTransaction();
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Sale $sale)
-    {
-        //
-    }
+        try {
+            // Revertir el stock de cada edición vendida
+            foreach ($sale->details as $detail) {
+                if ($detail->edition) {
+                    $detail->edition->increment('stock_actual', $detail->cantidad);
+                }
+            }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Sale $sale)
-    {
-        //
+            // Eliminar detalles y cabecera de la venta
+            $sale->details()->delete();
+            $sale->delete();
+
+            DB::commit();
+
+            session()->flash('swal', [
+                'icon'  => 'success',
+                'title' => '¡Venta Anulada!',
+                'text'  => 'La venta ha sido cancelada y los productos fueron devueltos al inventario.',
+            ]);
+
+            return redirect()->route('admin.ventas.index');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
     }
 }

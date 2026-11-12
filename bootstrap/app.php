@@ -20,8 +20,6 @@ return Application::configure(basePath: dirname(__DIR__))
         }
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        
-        // 🌐 Registramos el Middleware de Idioma aquí
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
         ]);

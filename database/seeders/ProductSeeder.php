@@ -2,14 +2,16 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\Product;
+use App\Models\User;
+use Illuminate\Database\Seeder;
 
 class ProductSeeder extends Seeder
 {
     public function run(): void
     {
+        $user = User::first();
+
         $products = [
             ['titulo' => 'Batman: The Dark Knight Returns'],
             ['titulo' => 'Watch Dogs: Legion Comic Series'],
@@ -18,13 +20,10 @@ class ProductSeeder extends Seeder
         ];
 
         foreach ($products as $product) {
-            Product::create($product);
+            Product::create([
+                'user_id' => $user->id,
+                'titulo'  => $product['titulo'],
+            ]);
         }
     }
 }
-
-
-
-
-
-

@@ -12,26 +12,32 @@ class Edition extends Model
     use HasFactory;
     
     protected $fillable = [
+        'product_id',
         'numero_edicion',
         'precio_compra',
         'precio_venta',
         'stock_actual',
-        'product_id',
     ];
 
-    // Ya lo tienes: Pertenece a un producto
+    /**
+     * Una edición pertenece a un producto base.
+     */
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    // Una edición puede tener muchas mermas registradas
+    /**
+     * Una edición puede tener muchas mermas registradas.
+     */
     public function wastes(): HasMany
     {
         return $this->hasMany(Waste::class);
     }
 
-    // Una edición puede aparecer en muchos detalles de ventas
+    /**
+     * Una edición puede aparecer en muchos renglones de venta.
+     */
     public function saleDetails(): HasMany
     {
         return $this->hasMany(SaleDetail::class);

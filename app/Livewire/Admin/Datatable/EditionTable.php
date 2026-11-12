@@ -3,14 +3,14 @@
 namespace App\Livewire\Admin\Datatable;
 
 use App\Models\Edition;
-use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
 use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
-use PowerComponents\LivewirePowerGrid\PowerGridFields;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
+use PowerComponents\LivewirePowerGrid\PowerGridFields;
 
 final class EditionTable extends PowerGridComponent
 {
@@ -31,7 +31,11 @@ final class EditionTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
-        return Edition::query()->with('product');
+        // whereHas('product') dispara el Global Scope de Product por user_id, 
+        // filtrando automáticamente solo las ediciones del usuario en sesión.
+        return Edition::query()
+            ->whereHas('product')
+            ->with('product');
     }
 
     public function relationSearch(): array

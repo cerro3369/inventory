@@ -3,28 +3,34 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Waste;
 use App\Models\Edition;
+use App\Models\Waste;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class WasteController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         return view('admin.mermas.index');
     }
 
-    public function create()
+    public function create(): View
     {
-        // Traemos las ediciones vigentes que tengan stock para poder darlas de baja
-        $editions = Edition::with('product')->where('stock_actual', '>', 0)->get();
+        // Traemos únicamente las ediciones vigentes del usuario que tengan stock disponible
+        $editions = Edition::with('product')
+            ->whereHas('product')
+            ->where('stock_actual', '>', 0)
+            ->get();
+
         return view('admin.mermas.create', compact('editions'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'edition_id' => 'required|exists:editions,id',
             'cantidad'   => 'required|integer|min:1',
             'tipo_baja'  => 'required|string|max:45',
@@ -33,17 +39,17 @@ class WasteController extends Controller
 
         DB::beginTransaction();
         try {
-            $edition = Edition::findOrFail($request->edition_id);
+            $edition = Edition::whereHas('product')->findOrFail($request->edition_id);
 
-            // Validamos que no intenten dar de baja más de lo que hay físico
+            // Validamos que no intenten dar de baja más de lo existente en almacén
             if ($edition->stock_actual < $request->cantidad) {
                 throw new \Exception("No puedes dar de baja una cantidad mayor al stock actual ({$edition->stock_actual} pzas).");
             }
 
-            // 1. Crear registro de la merma
-            Waste::create($request->all());
+            // 1. Crear registro de la merma (el trait BelongsToUser asigna user_id automáticamente)
+            Waste::create($validated);
 
-            // 2. DISMINUIR STOCK 📉
+            // 2. Disminuir stock en almacén
             $edition->decrement('stock_actual', $request->cantidad);
 
             DB::commit();
@@ -61,15 +67,15 @@ class WasteController extends Controller
         }
     }
 
-    public function edit(Waste $waste)
+    public function edit(Waste $waste): View
     {
         $waste->load('edition.product');
         return view('admin.mermas.edit', compact('waste'));
     }
 
-    public function update(Request $request, Waste $waste)
+    public function update(Request $request, Waste $waste): RedirectResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'cantidad'  => 'required|integer|min:1',
             'tipo_baja' => 'required|string|max:45',
             'notas'     => 'nullable|string',
@@ -77,25 +83,25 @@ class WasteController extends Controller
 
         DB::beginTransaction();
         try {
-            $edition = Edition::findOrFail($waste->edition_id);
+            $edition = Edition::whereHas('product')->findOrFail($waste->edition_id);
             
-            // Calculamos la diferencia entre la cantidad vieja de la merma y la nueva
+            // Calculamos la diferencia entre la nueva cantidad solicitada y la registrada previamente
             $diferencia = $request->cantidad - $waste->cantidad;
 
-            // Si la nueva cantidad de merma es mayor, restamos más stock
+            // Si la nueva merma es mayor, descontamos stock adicional
             if ($diferencia > 0) {
                 if ($edition->stock_actual < $diferencia) {
                     throw new \Exception("Stock insuficiente en almacén para incrementar la merma.");
                 }
                 $edition->decrement('stock_actual', $diferencia);
             } 
-            // Si la nueva cantidad de merma es menor, devolvemos stock al inventario
+            // Si la nueva merma es menor, devolvemos las piezas restadas en exceso al inventario
             elseif ($diferencia < 0) {
                 $edition->increment('stock_actual', abs($diferencia));
             }
 
-            // Actualizamos los datos
-            $waste->update($request->only(['cantidad', 'tipo_baja', 'notas']));
+            // Actualizamos la merma
+            $waste->update($validated);
 
             DB::commit();
 
@@ -108,7 +114,7 @@ class WasteController extends Controller
             return redirect()->route('admin.mermas.index');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => $e->getMessage()]);
+            return back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
     }
 }

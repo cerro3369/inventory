@@ -17,18 +17,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-
-        User::factory()->create([
-            'name' => 'roberto',
-            'email' => 'roberto@gmail.com',
+        $user = User::factory()->create([
+            'name'     => 'roberto',
+            'email'    => 'roberto@gmail.com',
             'password' => bcrypt('123456789'),
         ]);
 
-        $this->call(
-            ProductSeeder::class
-        );
+        $this->call([
+            ProductSeeder::class,
+        ]);
 
-        Product::factory(10)->create();
+        Product::factory(10)->create([
+            'user_id' => $user->id,
+        ]);
+
         Edition::factory(10)->create();
     }
 }
