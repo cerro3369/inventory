@@ -11,7 +11,7 @@
         ],
         [
             'name' => __('Productos'),
-            'icon' => 'fa-solid fa-book', 
+            'icon' => 'fa-solid fa-book',
             'href' => route('admin.catalogo.index'),
             'active' => request()->routeIs('admin.catalogo.*'),
         ],
@@ -24,7 +24,7 @@
         [
             'name' => __('Ventas'),
             'icon' => 'fa-solid fa-brands fa-sellcast',
-            'href' => route('admin.ventas.index'), 
+            'href' => route('admin.ventas.index'),
             'active' => request()->routeIs('admin.ventas.*'),
         ],
         [
@@ -39,7 +39,8 @@
 <aside id="top-bar-sidebar"
     class="fixed top-0 left-0 z-40 w-64 h-full transition-transform -translate-x-full sm:translate-x-0"
     aria-label="Sidebar">
-    <div class="h-full px-3 py-4 pt-20 overflow-y-auto bg-neutral-primary-soft border-e border-default">
+    <div
+        class="h-full px-3 py-4 pt-20 overflow-y-auto bg-white dark:bg-[#0f172a] border-r border-gray-200 dark:border-gray-800">
         <ul class="space-y-2 font-medium">
             @foreach ($links as $link)
                 <li>
