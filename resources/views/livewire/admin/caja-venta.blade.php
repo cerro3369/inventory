@@ -1,9 +1,9 @@
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-    {{-- COLUMNA IZQUIERDA: Buscador y Catálogo de Productos (7 Cols) --}}
+    {{-- Izquierda --}}
     <div class="lg:col-span-7 space-y-4">
         
-        {{-- Buscador Principal --}}
+        {{-- Buscador --}}
         <div class="relative">
             <x-wire-input 
                 wire:model.live.debounce.300ms="search"
@@ -15,7 +15,7 @@
             </x-wire-input>
         </div>
 
-        {{-- Tabla / Catálogo de Productos --}}
+        {{-- Catálogo de Productos --}}
         <x-wire-card class="shadow-md">
             <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-secondary-700">
                 <h3 class="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
@@ -85,7 +85,6 @@
                 </table>
             </div>
 
-            {{-- Paginación limpia --}}
             @if(method_exists($this->catalog, 'links'))
                 <div class="mt-4 pt-3 border-t border-gray-100 dark:border-secondary-800">
                     {{ $this->catalog->links() }}
@@ -94,7 +93,7 @@
         </x-wire-card>
     </div>
 
-    {{-- COLUMNA DERECHA: Carrito de Venta Actual (5 Cols - Sticky) --}}
+    {{-- Derecha --}}
     <div class="lg:col-span-5 lg:sticky lg:top-4 space-y-4">
         <x-wire-card class="shadow-lg border-t-4 border-t-blue-500">
             <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-secondary-700">
@@ -109,7 +108,7 @@
             </div>
 
             <div class="mt-3 space-y-3">
-                {{-- Lista de Ítems en el Carrito --}}
+                {{-- Lista de productos --}}
                 <div class="divide-y divide-gray-100 dark:divide-secondary-800 max-h-[380px] overflow-y-auto pr-1">
                     @forelse($cart as $id => $item)
                         <div class="py-3 flex items-center justify-between gap-2">
@@ -125,7 +124,6 @@
                                 </div>
                             </div>
 
-                            {{-- Ajuste de Cantidad (+ / -) --}}
                             <div class="flex items-center gap-1">
                                 <button 
                                     type="button"
@@ -168,7 +166,7 @@
                     @endforelse
                 </div>
 
-                {{-- Resumen de Total y Botón de Cobro --}}
+                {{-- Resumen --}}
                 @if(!empty($cart))
                     <div class="border-t border-gray-200 dark:border-secondary-700 pt-4 space-y-3">
                         <div class="flex flex-col items-center justify-center bg-green-50 dark:bg-green-950/40 p-4 rounded-xl border border-green-200 dark:border-green-900/60">

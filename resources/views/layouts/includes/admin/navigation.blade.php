@@ -23,7 +23,7 @@
 
             <div class="flex items-center gap-x-2">
 
-                {{-- 1. Selector de Idioma --}}
+                {{-- Idioma --}}
                 <div class="relative">
                     <x-dropdown align="right" width="48">
                         <x-slot name="trigger">
@@ -72,7 +72,7 @@
                     </x-dropdown>
                 </div>
 
-                {{-- 2. BOTÓN DE CAMBIO DE TEMA (MODO SWITCH INTERACTIVO) --}}
+                {{-- Tema --}}
                 <div x-data="{
                     darkMode: localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches),
                     toggleTheme() {
@@ -89,12 +89,11 @@
                     <button @click="toggleTheme()" type="button" aria-label="Toggle Theme"
                         class="relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-200 dark:bg-neutral-700 transition-colors duration-300 ease-in-out focus:outline-none">
 
-                        <!-- Círculo Deslizante -->
                         <span
                             class="pointer-events-none relative inline-block h-7 w-7 transform rounded-full bg-white dark:bg-neutral-900 shadow-md ring-0 transition duration-300 ease-in-out"
                             :class="darkMode ? 'translate-x-6' : 'translate-x-0'">
 
-                            <!-- Icono Sol (Modo Claro) -->
+                            <!-- Modo Claro -->
                             <span
                                 class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity duration-200"
                                 :class="darkMode ? 'opacity-0 ease-out duration-100' : 'opacity-100 ease-in duration-200'">
@@ -105,7 +104,7 @@
                                 </svg>
                             </span>
 
-                            <!-- Icono Luna (Modo Oscuro) -->
+                            <!-- Modo Oscuro -->
                             <span
                                 class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity duration-200"
                                 :class="darkMode ? 'opacity-100 ease-in duration-200' : 'opacity-0 ease-out duration-100'">
@@ -119,7 +118,7 @@
                     </button>
                 </div>
 
-                {{-- 3. Menú de Usuario / Perfil --}}
+                {{-- Perfil --}}
                 <div class="flex items-center ms-1">
                     <div>
                         <div class="relative">

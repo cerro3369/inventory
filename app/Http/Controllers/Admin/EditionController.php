@@ -13,28 +13,19 @@ use Illuminate\View\View;
 
 class EditionController extends Controller
 {
-    /**
-     * Muestra el listado del inventario de ediciones.
-     */
+
     public function index(): View
     {
         return view('admin.inventario.index');
     }
 
-    /**
-     * Muestra el formulario para recepcionar una nueva edición.
-     */
     public function create(): View
     {
-        // El Trait BelongsToUser en Product filtra automáticamente solo los productos del usuario
         $products = Product::orderBy('titulo', 'asc')->get();
 
         return view('admin.inventario.create', compact('products'));
     }
 
-    /**
-     * Guarda la nueva edición / stock recibido en la base de datos.
-     */
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -59,12 +50,8 @@ class EditionController extends Controller
         return redirect()->route('admin.inventario.index');
     }
 
-    /**
-     * Muestra el formulario para editar el stock o precios de una edición.
-     */
     public function edit(Edition $edition): View
     {
-        // Si el producto no pertenece al usuario autenticado (retorna null por el Global Scope)
         if (!$edition->product) {
             abort(403);
         }
@@ -74,9 +61,6 @@ class EditionController extends Controller
         return view('admin.inventario.edit', compact('edition', 'products'));
     }
 
-    /**
-     * Actualiza la información de la edición especificada.
-     */
     public function update(Request $request, Edition $edition): RedirectResponse
     {
         if (!$edition->product) {
@@ -105,16 +89,12 @@ class EditionController extends Controller
         return redirect()->route('admin.inventario.index');
     }
 
-    /**
-     * Elimina una edición de inventario con validación de integridad referencial.
-     */
     public function destroy(Edition $edition): RedirectResponse
     {
         if (!$edition->product) {
             abort(403);
         }
 
-        // Prevenir eliminación si existen ventas o mermas ligadas a esta edición
         if ($edition->saleDetails()->exists() || $edition->wastes()->exists()) {
             session()->flash('swal', [
                 'icon'  => 'error',
